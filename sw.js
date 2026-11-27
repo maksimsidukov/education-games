@@ -1,5 +1,5 @@
 const prefix = 'lapki:' + self.registration.scope + ':';
-const cacheName = prefix + 'v1';
+const cacheName = prefix + 'v2';
 const atScope = path => new URL(path, self.registration.scope).href;
 const indexUrl = atScope('index.html');
 const assets = new Set([
@@ -7,8 +7,8 @@ const assets = new Set([
   atScope('manifest.webmanifest'), atScope('assets/meadow.jpg'),
   atScope('assets/icon-192.png'), atScope('assets/icon-512.png'),
   ...[
-    'red', 'yellow', 'blue', 'green', 'purple', 'orange', 'circle', 'square', 'triangle',
-    'cat', 'dog', 'cow', 'duck', 'count-1', 'count-2', 'count-3', 'pairs', 'retry', 'correct', 'finish',
+    'red', 'yellow', 'blue', 'green', 'purple', 'orange', 'circle', 'square', 'triangle', 'rectangle',
+    'cat', 'dog', 'cow', 'duck', 'count-1', 'count-2', 'count-3', 'count-4', 'pairs', 'retry', 'correct', 'finish',
   ].map(clip => atScope('assets/voice/' + clip + '.wav')),
 ]);
 

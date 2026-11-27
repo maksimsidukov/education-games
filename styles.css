@@ -272,17 +272,18 @@ button:focus-visible, a:focus-visible { outline: 3px solid #3e704e; outline-offs
 .sound-clue { margin: 2px 0 6px; color: var(--accent); font-weight: 700; }
 .choices {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--columns, 3), minmax(0, 1fr));
   gap: clamp(7px, 2vw, 16px);
   width: min(100%, 515px);
   margin: 18px auto 2px;
 }
-.theme-pairs .choices { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.choices-compact { gap: clamp(5px, 1.5vw, 10px); }
 .choice {
   position: relative;
   display: grid;
   place-items: center;
   min-width: 0;
+  min-height: 48px;
   aspect-ratio: 1.12;
   border: 2px solid #e2e2d6;
   border-radius: clamp(13px, 3vw, 25px);
@@ -310,6 +311,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #3e704e; outline-offs
 .choice.taken .picture { visibility: hidden; }
 .picture { font: clamp(1.9rem, 8vw, 4.4rem)/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; }
 .theme-pairs .picture { font-size: clamp(1.55rem, 7vw, 3.65rem); }
+.choices-compact .picture { font-size: clamp(1.4rem, 7vw, 3.55rem); }
 .piece {
   display: block;
   width: min(66%, 93px);
@@ -320,6 +322,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid #3e704e; outline-offs
 .piece.ball { border-radius: 50%; background: radial-gradient(circle at 30% 24%, #fff6, transparent 35%), radial-gradient(circle at 42% 37%, var(--piece) 45%, var(--shade) 100%); }
 .piece.circle, .outline.circle { border-radius: 50%; }
 .piece.square, .outline.square { border-radius: 13%; }
+.piece.rectangle, .outline.rectangle { aspect-ratio: 1.55; border-radius: 13%; }
+.piece.rectangle { width: min(82%, 109px); }
+.outline.rectangle { width: clamp(89px, 22vw, 140px); }
 .piece.triangle, .outline.triangle { clip-path: polygon(50% 0, 100% 94%, 0 94%); }
 .outline {
   margin: 6px auto 10px;

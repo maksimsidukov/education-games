@@ -20,6 +20,7 @@ const shapes = [
   { id: 'square', name: 'Квадрат', color: '#6495f1', shade: '#3257b5' },
   { id: 'triangle', name: 'Треугольник', color: '#f8bf41', shade: '#d28b18' },
 ];
+const rectangle = { id: 'rectangle', name: 'Прямоугольник', color: '#7eaf55', shade: '#467d3c' };
 
 const animals = [
   { id: 'cat', name: 'Кошка', picture: '🐱', clue: 'Мяу-мяу!' },
@@ -35,11 +36,12 @@ const pictures = [
   { picture: '☀️', name: 'Солнышко' }, { picture: '🍐', name: 'Груша' },
 ];
 
-const carrots = Array.from({ length: 3 }, (_, index) => ({
+const carrots = Array.from({ length: 5 }, (_, index) => ({
   id: 'carrot-' + (index + 1), name: 'Морковка ' + (index + 1), picture: '🥕',
 }));
 
 const roundCount = 5;
+const introductoryRounds = 3;
 
 function shuffle(items) {
   const result = [...items];
@@ -52,9 +54,9 @@ function shuffle(items) {
 
 function makeRounds(id) {
   if (id === 'count') {
-    const quantities = ['одну морковку', 'две морковки', 'три морковки'];
-    return [1, 2, 3, 2, 3].map(target => ({
-      target, choices: carrots, chosen: [],
+    const quantities = ['одну морковку', 'две морковки', 'три морковки', 'четыре морковки'];
+    return [1, 2, 3, 3, 4].map((target, index) => ({
+      target, choices: carrots.slice(0, index < introductoryRounds ? 3 : target + 1), chosen: [],
       prompt: 'Дай зайчику ' + quantities[target - 1], clip: 'count-' + target,
     }));
   }
@@ -62,8 +64,9 @@ function makeRounds(id) {
   if (id === 'pairs') {
     const deck = shuffle(pictures);
     return Array.from({ length: roundCount }, (_, index) => {
-      const pair = [deck[index], deck[index + 3]];
-      const cards = [...pair, ...pair].map((card, index) => ({ ...card, id: 'card-' + index }));
+      const pairCount = index < introductoryRounds ? 2 : 3;
+      const items = Array.from({ length: pairCount }, (_, offset) => deck[(index * 2 + offset) % deck.length]);
+      const cards = [...items, ...items].map((card, index) => ({ ...card, id: 'card-' + index }));
       return {
         choices: shuffle(cards), matched: [], selected: null,
         prompt: 'Найди две одинаковые картинки', clip: 'pairs',
@@ -74,8 +77,11 @@ function makeRounds(id) {
   const pool = { colors, shapes, animals }[id];
   const order = shuffle(pool);
   return Array.from({ length: roundCount }, (_, index) => {
-    const target = order[index % order.length];
-    const choices = shuffle([target, ...shuffle(pool.filter(item => item !== target)).slice(0, 2)]);
+    const advanced = index >= introductoryRounds;
+    const available = id === 'shapes' && advanced ? [...pool, rectangle] : pool;
+    const target = id === 'shapes' && index === introductoryRounds ? rectangle : order[index % order.length];
+    const distractors = shuffle(available.filter(item => item !== target)).slice(0, advanced ? 3 : 2);
+    const choices = shuffle([target, ...distractors]);
     const prompts = {
       colors: 'Где ' + target.name.toLowerCase() + ' шарик?',
       shapes: 'Подбери фигурку',

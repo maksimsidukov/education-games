@@ -197,6 +197,8 @@ function renderRound(announce = false) {
   }
   const choices = document.createElement('div');
   choices.className = 'choices';
+  choices.style.setProperty('--columns', round.choices.length === 6 ? 3 : round.choices.length);
+  if (round.choices.length === 5) choices.classList.add('choices-compact');
   choices.append(...round.choices.map(makeChoice));
   activity.append(choices);
   updateActivity();

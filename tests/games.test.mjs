@@ -56,3 +56,49 @@ test('matching checks two distinct cards and requires both pairs', () => {
   assert.equal(play(game, other.id), 'progress');
   assert.equal(play(game, otherMatch.id), 'correct');
 });
+
+test('choice games start with three options and add a fourth in the last rounds', () => {
+  for (const id of ['colors', 'shapes', 'animals']) {
+    const game = createGame(id);
+    for (const optionCount of [3, 3, 3, 4, 4]) {
+      assert.equal(game.round.choices.length, optionCount);
+      assert.equal(new Set(game.round.choices.map(choice => choice.id)).size, optionCount);
+      assert.equal(play(game, game.round.target.id), 'correct');
+      nextRound(game);
+    }
+    if (id === 'shapes') {
+      assert.ok(game.rounds.slice(3).some(round => round.target.id === 'rectangle'));
+      assert.ok(game.rounds.slice(0, 3).every(round =>
+        round.choices.every(choice => choice.id !== 'rectangle')));
+    }
+  }
+});
+
+test('the last counting board needs four carrots and leaves a spare', () => {
+  const game = createGame('count');
+  while (game.position < 4) {
+    for (const carrot of game.round.choices.slice(0, game.round.target)) play(game, carrot.id);
+    nextRound(game);
+  }
+  assert.equal(game.round.choices.length, 5);
+  for (const id of ['carrot-1', 'carrot-2', 'carrot-3']) {
+    assert.equal(play(game, id), 'progress');
+  }
+  assert.equal(play(game, 'carrot-4'), 'correct');
+  assert.equal(play(game, 'carrot-5'), 'ignored');
+});
+
+test('advanced matching requires all three pairs', () => {
+  const game = createGame('pairs');
+  for (const pairCount of [2, 2, 2, 3, 3]) {
+    const pictures = [...new Set(game.round.choices.map(card => card.picture))];
+    assert.equal(pictures.length, pairCount);
+    pictures.forEach((picture, index) => {
+      const [first, second] = game.round.choices.filter(card => card.picture === picture);
+      assert.equal(play(game, first.id), 'progress');
+      assert.equal(play(game, second.id), index === pairCount - 1 ? 'correct' : 'matched');
+    });
+    nextRound(game);
+  }
+  assert.equal(game.finished, true);
+});
