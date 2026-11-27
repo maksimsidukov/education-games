@@ -1,5 +1,5 @@
 const prefix = 'lapki:' + self.registration.scope + ':';
-const cacheName = prefix + 'v3';
+const cacheName = prefix + 'v4';
 const atScope = path => new URL(path, self.registration.scope).href;
 const indexUrl = atScope('index.html');
 const colors = ['red', 'yellow', 'blue', 'green', 'purple', 'orange', 'pink', 'turquoise'];

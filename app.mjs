@@ -15,9 +15,11 @@ const clue = $('sound-clue');
 const soundToggle = $('sound-toggle');
 const install = $('install');
 const audio = new Audio();
+const successPauseMs = 1900;
 let game;
 let scene;
 let installPrompt;
+let advanceTimer;
 let sound = true;
 
 const coverArt = {
@@ -232,6 +234,7 @@ function renderRoute({ focus = false, announce = false } = {}) {
   const target = location.hash.startsWith('#/') && Object.hasOwn(games, route) ? route : 'home';
   if (scene === target) return;
   scene = target;
+  clearTimeout(advanceTimer);
   audio.pause();
   home.hidden = target !== 'home';
   board.hidden = target === 'home';
@@ -271,6 +274,7 @@ function submitChoice(answer, button) {
     next.textContent = game.position + 1 === game.rounds.length ? 'Готово' : 'Дальше';
     next.hidden = false;
     next.focus({ preventScroll: true });
+    advanceTimer = setTimeout(advanceLevel, successPauseMs);
   } else if (button.disabled) {
     activity.querySelector('button[data-choice]:not(:disabled)')?.focus({ preventScroll: true });
   }
@@ -282,11 +286,15 @@ activity.addEventListener('click', event => {
   if (button && game) submitChoice(button.dataset.choice, button);
 });
 
-next.addEventListener('click', () => {
-  if (!nextRound(game)) return;
+function advanceLevel() {
+  clearTimeout(advanceTimer);
+  if (!game || !nextRound(game)) return;
+  const focusReplay = document.activeElement === next;
   renderRound(true);
-  if (!game.finished) replay.focus({ preventScroll: true });
-});
+  if (focusReplay && !game.finished) replay.focus({ preventScroll: true });
+}
+
+next.addEventListener('click', advanceLevel);
 
 check.addEventListener('click', () => submitChoice('check', check));
 
