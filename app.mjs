@@ -6,6 +6,7 @@ const board = $('game');
 const library = $('game-list');
 const activity = $('activity');
 const feedback = $('feedback');
+const check = $('check');
 const next = $('next');
 const again = $('again');
 const finishHome = $('finish-home');
@@ -20,11 +21,12 @@ let installPrompt;
 let sound = true;
 
 const coverArt = {
-  balls: '<i></i><i></i><i></i><b>✦</b>',
+  'color-pieces': '<i></i><i></i><i></i><b>✦</b>',
   blocks: '<i></i><i></i><i></i><b>·</b>',
   friends: '<span>🐱</span><span>🐶</span><b>♪</b>',
   carrots: '<span>🥕</span><span>🥕</span><b>✦</b>',
   cards: '<span>🌻</span><span>🍎</span><b>✧</b>',
+  'shadow-pictures': '<span>🐇</span><span>🐇</span><b>✦</b>',
 };
 
 for (const [id, { title, skill, art }] of Object.entries(games)) {
@@ -82,7 +84,7 @@ function speak(clip) {
 
 function roundProgress() {
   const rounds = $('rounds');
-  rounds.setAttribute('aria-label', game.finished ? 'Все 5 заданий выполнены' :
+  rounds.setAttribute('aria-label', game.finished ? 'Все ' + game.rounds.length + ' заданий выполнены' :
     'Задание ' + (game.position + 1) + ' из ' + game.rounds.length);
   rounds.replaceChildren(...game.rounds.map((_, index) => {
     const dot = document.createElement('i');
@@ -92,26 +94,27 @@ function roundProgress() {
   }));
 }
 
+function makePiece(item) {
+  const piece = document.createElement('span');
+  piece.setAttribute('aria-hidden', 'true');
+  if (item.picture) {
+    piece.className = 'picture';
+    piece.textContent = item.picture;
+  } else {
+    piece.className = 'piece ' + (item.shapeId ?? item.id);
+    piece.style.setProperty('--piece', item.color);
+    piece.style.setProperty('--shade', item.shade);
+  }
+  return piece;
+}
+
 function makeChoice(item) {
   const button = document.createElement('button');
   button.className = 'choice';
   button.type = 'button';
   button.dataset.choice = item.id;
-  button.setAttribute('aria-label', item.name);
-  if (item.picture) {
-    const picture = document.createElement('span');
-    picture.className = 'picture';
-    picture.setAttribute('aria-hidden', 'true');
-    picture.textContent = item.picture;
-    button.append(picture);
-  } else {
-    const shape = document.createElement('span');
-    shape.className = 'piece ' + (game.id === 'colors' ? 'ball' : item.id);
-    shape.style.setProperty('--piece', item.color);
-    shape.style.setProperty('--shade', item.shade);
-    shape.setAttribute('aria-hidden', 'true');
-    button.append(shape);
-  }
+  button.setAttribute('aria-label', game.id === 'shadows' ? 'Тень: ' + item.name : item.name);
+  button.append(makePiece(item));
   if (game.id === 'pairs') button.setAttribute('aria-pressed', 'false');
   return button;
 }
@@ -120,14 +123,12 @@ function updateActivity(answer, result) {
   const { id, round, solved } = game;
   for (const button of activity.querySelectorAll('[data-choice]')) {
     const choiceId = button.dataset.choice;
-    const taken = id === 'count' && round.chosen.includes(choiceId);
     const matched = id === 'pairs' && round.matched.includes(choiceId);
     const selected = id === 'pairs' && round.selected?.id === choiceId;
     button.classList.toggle('selected', selected);
     button.classList.toggle('matched', matched || (solved && choiceId === round.target?.id));
     button.classList.toggle('try-again', result === 'retry' && choiceId === answer);
-    button.classList.toggle('taken', taken);
-    button.disabled = solved || taken || matched;
+    button.disabled = solved || matched || (choiceId === 'take' && round.given === 0);
     if (id === 'pairs') button.setAttribute('aria-pressed', String(Boolean(selected || matched)));
   }
   if (id === 'shapes' && solved) {
@@ -137,10 +138,12 @@ function updateActivity(answer, result) {
   }
   if (id === 'count') {
     const tray = activity.querySelector('.tray');
-    for (const [index, slot] of Array.from(tray.children).entries()) {
-      slot.textContent = index < round.chosen.length ? '🥕' : '';
-    }
-    tray.setAttribute('aria-label', round.chosen.length + ' из ' + round.target + ' морковок');
+    const visibleCarrots = 24;
+    tray.querySelector('.harvest').textContent =
+      '🥕'.repeat(Math.min(round.given, visibleCarrots)) + (round.given > visibleCarrots ? '…' : '');
+    tray.querySelector('.carrot-total').textContent = round.given;
+    tray.setAttribute('aria-label', 'Морковок у зайчика: ' + round.given);
+    check.disabled = solved;
   }
   roundProgress();
 }
@@ -152,6 +155,8 @@ function renderRound(announce = false) {
   feedback.textContent = '';
   feedback.className = 'feedback';
   next.hidden = true;
+  check.hidden = id !== 'count' || finished;
+  check.disabled = false;
   again.hidden = finishHome.hidden = !finished;
   replay.hidden = finished;
   activity.replaceChildren();
@@ -181,12 +186,20 @@ function renderRound(announce = false) {
   if (id === 'count') {
     const basket = document.createElement('div');
     basket.className = 'basket';
-    basket.innerHTML = '<img src="./assets/icon-192.png" width="86" height="86" alt="Зайчик"><div class="tray" role="img"></div>';
-    const tray = basket.querySelector('.tray');
-    for (let index = 0; index < round.target; index++) {
-      tray.append(document.createElement('span'));
-    }
-    activity.append(basket);
+    basket.innerHTML = `
+      <img src="./assets/icon-192.png" width="86" height="86" alt="Зайчик">
+      <div class="tray" role="img">
+        <span class="harvest" aria-hidden="true"></span><b class="carrot-total" aria-hidden="true">0</b>
+      </div>`;
+    const controls = document.createElement('div');
+    controls.className = 'count-controls';
+    controls.innerHTML = `
+      <button type="button" class="pill count-give" data-choice="give" aria-label="Дать морковку"><b aria-hidden="true">+</b> Морковка</button>
+      <button type="button" class="pill" data-choice="take" aria-label="Убрать морковку"><b aria-hidden="true">−</b> Морковка</button>`;
+    activity.append(basket, controls);
+    updateActivity();
+    if (announce) speak(round.clip);
+    return;
   }
   if (id === 'animals') {
     const waves = document.createElement('div');
@@ -195,9 +208,18 @@ function renderRound(announce = false) {
     waves.innerHTML = '<i></i><i></i><i></i><i></i><i></i>';
     activity.append(waves);
   }
+  if (id === 'shadows') {
+    const source = document.createElement('div');
+    source.className = 'shadow-target';
+    source.role = 'img';
+    source.setAttribute('aria-label', 'Картинка: ' + round.target.name);
+    source.append(makePiece(round.target));
+    activity.append(source);
+  }
   const choices = document.createElement('div');
   choices.className = 'choices';
-  choices.style.setProperty('--columns', round.choices.length === 6 ? 3 : round.choices.length);
+  const size = round.choices.length;
+  choices.style.setProperty('--columns', size >= 6 ? size / 2 : size);
   if (round.choices.length === 5) choices.classList.add('choices-compact');
   choices.append(...round.choices.map(makeChoice));
   activity.append(choices);
@@ -234,10 +256,7 @@ document.addEventListener('click', event => {
 window.addEventListener('hashchange', () => renderRoute({ focus: true }));
 window.addEventListener('popstate', () => renderRoute({ focus: true }));
 
-activity.addEventListener('click', event => {
-  const button = event.target.closest('button[data-choice]');
-  if (!button || !game) return;
-  const answer = button.dataset.choice;
+function submitChoice(answer, button) {
   const result = play(game, answer);
   if (result === 'ignored') return;
   updateActivity(answer, result);
@@ -253,9 +272,14 @@ activity.addEventListener('click', event => {
     next.hidden = false;
     next.focus({ preventScroll: true });
   } else if (button.disabled) {
-    activity.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
+    activity.querySelector('button[data-choice]:not(:disabled)')?.focus({ preventScroll: true });
   }
   if (result === 'correct' || result === 'retry') speak(result);
+}
+
+activity.addEventListener('click', event => {
+  const button = event.target.closest('button[data-choice]');
+  if (button && game) submitChoice(button.dataset.choice, button);
 });
 
 next.addEventListener('click', () => {
@@ -263,6 +287,8 @@ next.addEventListener('click', () => {
   renderRound(true);
   if (!game.finished) replay.focus({ preventScroll: true });
 });
+
+check.addEventListener('click', () => submitChoice('check', check));
 
 again.addEventListener('click', () => {
   game = createGame(game.id);

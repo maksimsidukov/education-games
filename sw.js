@@ -1,14 +1,18 @@
 const prefix = 'lapki:' + self.registration.scope + ':';
-const cacheName = prefix + 'v2';
+const cacheName = prefix + 'v3';
 const atScope = path => new URL(path, self.registration.scope).href;
 const indexUrl = atScope('index.html');
+const colors = ['red', 'yellow', 'blue', 'green', 'purple', 'orange', 'pink', 'turquoise'];
+const colorClips = ['circle', 'square', 'triangle', 'rectangle', 'star']
+  .flatMap(shape => colors.map(color => 'color-' + shape + '-' + color));
 const assets = new Set([
   indexUrl, atScope('styles.css'), atScope('app.mjs'), atScope('games.mjs'),
   atScope('manifest.webmanifest'), atScope('assets/meadow.jpg'),
   atScope('assets/icon-192.png'), atScope('assets/icon-512.png'),
   ...[
-    'red', 'yellow', 'blue', 'green', 'purple', 'orange', 'circle', 'square', 'triangle', 'rectangle',
-    'cat', 'dog', 'cow', 'duck', 'count-1', 'count-2', 'count-3', 'count-4', 'pairs', 'retry', 'correct', 'finish',
+    ...colorClips, 'circle', 'square', 'triangle', 'rectangle', 'star',
+    'cat', 'dog', 'cow', 'duck', 'frog',
+    'count-1', 'count-2', 'count-3', 'count-4', 'count-5', 'pairs', 'shadows', 'retry', 'correct', 'finish',
   ].map(clip => atScope('assets/voice/' + clip + '.wav')),
 ]);
 
